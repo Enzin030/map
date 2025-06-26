@@ -79,6 +79,9 @@
                 border-radius: 4px;
                 margin-bottom: 5px;
             }
+            .thumbnail-container img{
+                border-radius: 4px;
+            }
             .thumbnail-container img,
             .thumbnail-container svg {
                 width: 100%;
