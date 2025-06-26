@@ -94,6 +94,8 @@
             {
                 border: 3px solid #4FC3F7;
                 border-radius: 4px;
+            }
+            .layer-option.selected span {
                 color: #4FC3F7;
             }
             .layer-option .thumbnail-container svg {
