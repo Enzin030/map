@@ -15,7 +15,6 @@ javascript:
   document.head.appendChild(link);
 });
 
-/* 載入腳本 */
 const scripts = [
   'https://unpkg.com/leaflet/dist/leaflet.js',
   'https://unpkg.com/leaflet.awesome-markers/dist/leaflet.awesome-markers.js',
