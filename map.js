@@ -101,7 +101,7 @@
             iconCreateFunction: cluster => {
                 const count = cluster.getChildCount();
                 const a = [0.7, 0.8, 0.9][+(count > 10) + (count > 20)];
-                const color = `rgba(51, 51, 51, ${a})`;
+                const color = `rgba(2, 125, 180, ${a})`;
                 const size = Math.min(40 + count * 2, 60);
                 return L.divIcon({
                     html: `<div style="background:${color};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">${count}</div>`,
