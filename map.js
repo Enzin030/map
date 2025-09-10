@@ -1,9 +1,9 @@
     /* 創建底圖 */
     function createBaseLayer(url, maxNativeZoom = 20, maxZoom = 20, minZoom = 6) {
         return L.tileLayer(url, {
-        maxNativeZoom,
-        maxZoom,
-        minZoom
+            maxNativeZoom,
+            maxZoom,
+            minZoom
         });
     }
 
@@ -13,6 +13,8 @@
             showLayerButton = true,
             showZoomControl = true
         } = options;
+
+        const mainClusterGroup = options.clusterGroup;
 
         if (showLayerButton) {
             const LayerButton = L.Control.extend({
@@ -32,12 +34,12 @@
                         let html = `<div class="popup-content"><div class="popup-title">${title}</div><div class="layer-options-container">`;
                         Object.keys(layers).forEach(layerName => {
                             html += `
-                            <div class="layer-option ${isSvg ? 'theme-layer' : 'base-layer'}" data-layer="${layerName}">
-                                <div class="thumbnail-container">
-                                    ${isSvg ? thumbnails[layerName] : `<img src="${thumbnails[layerName]}" alt="${layerName}">`}
-                                </div>
-                                <span>${layerName}</span>
-                            </div>`;
+                                <div class="layer-option ${isSvg ? 'theme-layer' : 'base-layer'}" data-layer="${layerName}">
+                                    <div class="thumbnail-container">
+                                        ${isSvg ? thumbnails[layerName] : `<img src="${thumbnails[layerName]}" alt="${layerName}">`}
+                                    </div>
+                                    <span>${layerName}</span>
+                                </div>`;
                         });
                         html += `</div></div>`;
                         return html;
@@ -87,7 +89,6 @@
                     return container;
                 }
             });
-
             const layerButton = new LayerButton({ position: 'topright' });
             layerButton.addTo(map);
         }
@@ -95,6 +96,22 @@
         if (showZoomControl) {
             L.control.zoom({ position: 'topright' }).addTo(map);
         }
+    }
+
+    /* 創建圖標叢集 */
+    function createSharedClusterGroup() {
+        return L.markerClusterGroup({
+            iconCreateFunction: cluster => {
+                const count = cluster.getChildCount();
+                const a = [0.7, 0.8, 0.9][+(count > 10) + (count > 20)];
+                const color = `rgba(51, 51, 51, ${a})`;
+                const size = Math.min(40 + count * 2, 60);
+                return L.divIcon({
+                    html: `<div style="background:${color};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">${count}</div>`,
+                    className: 'marker-cluster'
+                });
+            }
+        });
     }
 
     /* 創建圖標圖層 */
@@ -106,33 +123,20 @@
             iconAnchor: [15, 30],
             popupAnchor: [0, -30]
         });
-
-        const clusterGroup = L.markerClusterGroup({
-            iconCreateFunction: cluster => {
-                const count = cluster.getChildCount();
-                const rgbMatch = markerColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-                const [r, g, b] = rgbMatch ? rgbMatch.slice(1, 4) : [0, 0, 0];
-                const a = [0.7, 0.8, 0.9][+(count > 10) + (count > 20)];
-                const color = `rgba(${r}, ${g}, ${b}, ${a})`;
-                const size = Math.min(40 + count * 2, 60);
-
-                return L.divIcon({
-                    html: `<div style="background:${color};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">${count}</div>`,
-                    className: 'marker-cluster'
-                });
-            }
-        });
-
+        
+        const featureGroup = L.featureGroup();
+        
         geoJSON.features.forEach(f => {
             const [lng, lat] = f.geometry.coordinates;
             const marker = L.marker([lat, lng], { icon });
-
+            
             if (underText) marker.bindTooltip(f.properties.name, { permanent: true, direction: "bottom", opacity: 0.9 });
             marker.bindPopup(`<b>${f.properties.name}</b>`);
-            clusterGroup.addLayer(marker);
+            
+            featureGroup.addLayer(marker);
         });
-
-        return clusterGroup;
+        
+        return featureGroup;
     }
 
     /* 打包GeoJson */
