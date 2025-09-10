@@ -112,7 +112,7 @@
     }
 
     /* 創建圖標圖層 */
-    function createMarkers(markerColor, geoJSON, underText, iconHTML) {
+    function createMarkers(geoJSON, underText, iconHTML) {
         const icon = L.divIcon({
             className: 'custom-icon',
             html: iconHTML,
