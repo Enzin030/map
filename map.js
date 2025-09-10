@@ -14,11 +14,21 @@
             showZoomControl = true
         } = options;
 
-        const mainClusterGroup = options.clusterGroup;
+        const mainClusterGroup = L.markerClusterGroup({
+            iconCreateFunction: cluster => {
+                const count = cluster.getChildCount();
+                const rgba = `rgba(51, 51, 51, ${[0.7, 0.8, 0.9][+(count > 10) + (count > 20)]})`;
+                const size = Math.min(40 + count * 2, 60);
+                return L.divIcon({
+                    html: `<div style="background:${rgba};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">${count}</div>`
+                });
+            }
+        });
+        map.addLayer(mainClusterGroup);
 
-         if (showLayerButton) {
+        if (showLayerButton) {
             const LayerButton = L.Control.extend({
-                onAdd: function(map) {
+                onAdd: function (map) {
                     const container = L.DomUtil.create('div', 'layer-button-container');
                     const button = L.DomUtil.create('button', 'layer-button', container);
                     button.innerHTML = `
@@ -29,13 +39,13 @@
                     const popup = L.DomUtil.create('div', 'layer-popup', container);
                     popup.style.display = 'none';
 
-                    function buildLayerSection(title, layers, isSvg) {
+                    function buildLayerSection(title, layers, isTheme) {
                         let html = `<div class="popup-content"><div class="popup-title">${title}</div><div class="layer-options-container">`;
                         Object.keys(layers).forEach(layerName => {
                             html += `
-                                <div class="layer-option ${isSvg ? 'theme-layer' : 'base-layer'}" data-layer="${layerName}">
+                                <div class="layer-option ${isTheme ? 'theme-layer' : 'base-layer'}" data-layer="${layerName}">
                                     <div class="thumbnail-container">
-                                        ${isSvg ? thumbnails[layerName] : `<img src="${thumbnails[layerName]}" alt="${layerName}">`}
+                                        ${isTheme ? thumbnails[layerName] : `<img src="${thumbnails[layerName]}" alt="${layerName}">`}
                                     </div>
                                     <span>${layerName}</span>
                                 </div>`;
@@ -61,7 +71,6 @@
                     popup.addEventListener('click', e => {
                         const target = e.target.closest('.layer-option');
                         if (!target) return;
-
                         L.DomEvent.stop(e);
                         const layerName = target.getAttribute('data-layer');
 
@@ -74,27 +83,31 @@
                             target.classList.add('selected');
                         } else if (target.classList.contains('theme-layer')) {
                             const layer = themeLayers[layerName];
-                            // 關鍵改動：不是操作 map，而是操作 mainClusterGroup
-                            if (mainClusterGroup && mainClusterGroup.hasLayer(layer)) {
-                                mainClusterGroup.removeLayer(layer);
+                            const isMarkerLayer = layer instanceof L.FeatureGroup;
+                            const targetGroup = isMarkerLayer ? mainClusterGroup : map;
+                            
+                            if (targetGroup.hasLayer(layer)) {
+                                targetGroup.removeLayer(layer);
                                 target.classList.remove('selected');
-                            } else if (mainClusterGroup) {
-                                mainClusterGroup.addLayer(layer);
+                            } else {
+                                targetGroup.addLayer(layer);
+                                if (layer instanceof L.TileLayer) layer.bringToFront();
                                 target.classList.add('selected');
                             }
                         }
                     });
+
                     return container;
                 }
             });
             const layerButton = new LayerButton({ position: 'topright' });
             layerButton.addTo(map);
         }
+
         if (showZoomControl) {
             L.control.zoom({ position: 'topright' }).addTo(map);
         }
     }
-
     /* 創建圖標叢集 */
     function createSharedClusterGroup() {
         return L.markerClusterGroup({
