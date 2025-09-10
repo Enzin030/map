@@ -16,11 +16,10 @@
 
         const mainClusterGroup = options.clusterGroup;
 
-        if (showLayerButton) {
+         if (showLayerButton) {
             const LayerButton = L.Control.extend({
                 onAdd: function(map) {
                     const container = L.DomUtil.create('div', 'layer-button-container');
-
                     const button = L.DomUtil.create('button', 'layer-button', container);
                     button.innerHTML = `
                         <svg xmlns="https://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24">
@@ -75,24 +74,22 @@
                             target.classList.add('selected');
                         } else if (target.classList.contains('theme-layer')) {
                             const layer = themeLayers[layerName];
-                            if (map.hasLayer(layer)) {
-                                map.removeLayer(layer);
+                            // 關鍵改動：不是操作 map，而是操作 mainClusterGroup
+                            if (mainClusterGroup && mainClusterGroup.hasLayer(layer)) {
+                                mainClusterGroup.removeLayer(layer);
                                 target.classList.remove('selected');
-                            } else {
-                                layer.addTo(map);
-                                if (layer instanceof L.TileLayer) layer.bringToFront();
+                            } else if (mainClusterGroup) {
+                                mainClusterGroup.addLayer(layer);
                                 target.classList.add('selected');
                             }
                         }
                     });
-
                     return container;
                 }
             });
             const layerButton = new LayerButton({ position: 'topright' });
             layerButton.addTo(map);
         }
-
         if (showZoomControl) {
             L.control.zoom({ position: 'topright' }).addTo(map);
         }
