@@ -132,28 +132,9 @@
             }
         });
     }
-
-    /* 創建圖標叢集 */
-    function makeSharedCluster() {
-        return L.MarkerClusterGroup.extend({
-            options: {
-                iconCreateFunction: function(cluster) {
-                    const count = cluster.getChildCount();
-                    const a = [0.7, 0.8, 0.9][+(count > 10) + (count > 20)];
-                    const color = `rgba(2, 125, 180, ${a})`;
-                    const size = Math.min(40 + count * 2, 60);
-                    const html = `<div style="background:${color};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">${count}</div>`;
-                    return L.divIcon({
-                        html: html,
-                        className: 'marker-cluster'
-                    });
-                }
-            }
-        });
-    }
     
     /* 創建圖標圖層 */
-    function createMarkers(geoJSON, underText, iconHTML) {
+    function createMarkers(markerColor, geoJSON, underText, iconHTML) {
         const icon = L.divIcon({
             className: 'custom-icon',
             html: iconHTML,
@@ -161,19 +142,19 @@
             iconAnchor: [15, 30],
             popupAnchor: [0, -30]
         });
-        
+
         const featureGroup = L.featureGroup();
-        
+
         geoJSON.features.forEach(f => {
             const [lng, lat] = f.geometry.coordinates;
             const marker = L.marker([lat, lng], { icon });
-            
-            if (underText) marker.bindTooltip(f.properties.name, { permanent: true, direction: "bottom", opacity: 0.9 });
+            if (underText) {
+            marker.bindTooltip(f.properties.name, { permanent: true, direction: "bottom", opacity: 0.9 });
+            }
             marker.bindPopup(`<b>${f.properties.name}</b>`);
-            
             featureGroup.addLayer(marker);
         });
-        
+
         return featureGroup;
     }
 
