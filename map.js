@@ -7,6 +7,8 @@
         });
     }
 
+    const activeClusterThemes = new Set();
+    
     /* 創建圖層按鈕 */
     function createLayerButton(map, baseLayers, themeLayers, thumbnails, options = {}) {
         const {
