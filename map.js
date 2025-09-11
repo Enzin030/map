@@ -75,12 +75,15 @@
                         } else if (target.classList.contains('theme-layer')) {
                             const layer = themeLayers[layerName];
                             
-                            if (mainClusterGroup && mainClusterGroup.hasLayer(layer)) {
-                                mainClusterGroup.removeLayer(layer);
-                                target.classList.remove('selected');
-                            } else if (mainClusterGroup) {
-                                mainClusterGroup.addLayer(layer);
-                                target.classList.add('selected');
+                            if (mainClusterGroup) {
+                                if (target.classList.contains('selected')) {
+                                    mainClusterGroup.removeLayer(layer);
+
+                                    target.classList.remove('selected');
+                                } else {
+                                    mainClusterGroup.addLayer(layer);
+                                    target.classList.add('selected');
+                                }
                             }
                         }
                     });
