@@ -133,29 +133,18 @@
     }
     
     /* 創建圖標圖層 */
-    function createMarkers(markerColor, geoJSON, underText, iconHTML) {
-        const icon = L.divIcon({
-            className: 'custom-icon',
-            html: iconHTML,
-            iconSize: [30, 30],
-            iconAnchor: [15, 30],
-            popupAnchor: [0, -30]
-        });
-
+    function createMarkers(geoJSON, underText, iconHTML) {
+        const icon = L.divIcon({ className:'custom-icon', html: iconHTML, iconSize:[30,30], iconAnchor:[15,30], popupAnchor:[0,-30] });
         const featureGroup = L.featureGroup();
-
         geoJSON.features.forEach(f => {
             const [lng, lat] = f.geometry.coordinates;
-            const marker = L.marker([lat, lng], { icon });
-            if (underText) {
-            marker.bindTooltip(f.properties.name, { permanent: true, direction: "bottom", opacity: 0.9 });
-            }
-            marker.bindPopup(`<b>${f.properties.name}</b>`);
-            featureGroup.addLayer(marker);
+            const m = L.marker([lat, lng], { icon });
+            if (underText) m.bindTooltip(f.properties.name, { permanent:true, direction:"bottom", opacity:0.9 });
+            m.bindPopup(`<b>${f.properties.name}</b>`);
+            featureGroup.addLayer(m);
         });
-
         return featureGroup;
-    }
+        }
 
     /* 打包GeoJson */
     function coordsToGeoJSON(coordsObj) {
