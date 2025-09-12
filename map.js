@@ -1,26 +1,22 @@
-    /* 創建底圖 */
-    function createBaseLayer(url, maxNativeZoom = 20, maxZoom = 20, minZoom = 6) {
-        return L.tileLayer(url, {
-            maxNativeZoom,
-            maxZoom,
-            minZoom
-        });
-    }
-
     const activeClusterThemes = new Set();
     
     /* 創建圖層按鈕 */
     function createLayerButton(map, baseLayers, themeLayers, thumbnails, options = {}) {
         const {
             showLayerButton = true,
-            showZoomControl = true
+            showZoomControl = true,
+            defaultBase = null,                 
+            defaultThemes: _defaultThemes = [], 
+            activeClusterThemes: injectedActiveSet = null
         } = options;
 
         const mainClusterGroup = options.clusterGroup;
+        const activeClusterThemes =
+            injectedActiveSet || (window._activeClusterThemes ||= new Set());
 
-         if (showLayerButton) {
+        if (showLayerButton) {
             const LayerButton = L.Control.extend({
-                onAdd: function (map) {
+            onAdd: function (map) {
                 var container = L.DomUtil.create('div', 'layer-button-container');
                 L.DomEvent.disableClickPropagation(container);
                 L.DomEvent.disableScrollPropagation(container);
@@ -32,118 +28,146 @@
                 popup.style.display = 'none';
 
                 var popupContent = `
-                    <div class="popup-content">
+                <div class="popup-content">
                     <div class="popup-title">底圖</div>
                     <div class="layer-options-container">`;
                 Object.keys(baseLayers).forEach(function (layerName) {
-                    var content = thumbnails[layerName];
-                    let thumbHtml = '';
-                    if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
+                var content = thumbnails[layerName];
+                let thumbHtml = '';
+                if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
                     thumbHtml = `<img src="${content}" alt="${layerName}" class="thumbnail-img">`;
-                    } else {
+                } else {
                     thumbHtml = `<div class="thumbnail-svg">${content}</div>`;
-                    }
-                    popupContent += `
+                }
+                popupContent += `
                     <div class="layer-option base-layer" data-layer="${layerName}">
-                        <div class="thumbnail-container">${thumbHtml}</div>
-                        <span>${layerName}</span>
+                    <div class="thumbnail-container">${thumbHtml}</div>
+                    <span>${layerName}</span>
                     </div>`;
                 });
                 popupContent += `
                     </div>
-                    </div>`;
+                </div>`;
 
                 popupContent += `
-                    <div class="popup-content">
+                <div class="popup-content">
                     <div class="popup-title">主題圖</div>
                     <div class="layer-options-container">`;
                 Object.keys(themeLayers).forEach(function (layerName) {
-                    var content = thumbnails[layerName];
-                    let thumbHtml = '';
-                    if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
+                var content = thumbnails[layerName];
+                let thumbHtml = '';
+                if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
                     thumbHtml = `<img src="${content}" alt="${layerName}" class="thumbnail-img">`;
-                    } else {
+                } else {
                     thumbHtml = `<div class="thumbnail-svg">${content}</div>`;
-                    }
-                    popupContent += `
+                }
+                popupContent += `
                     <div class="layer-option theme-layer" data-layer="${layerName}">
-                        <div class="thumbnail-container">${thumbHtml}</div>
-                        <span>${layerName}</span>
+                    <div class="thumbnail-container">${thumbHtml}</div>
+                    <span>${layerName}</span>
                     </div>`;
                 });
                 popupContent += `
                     </div>
-                    </div>`;
+                </div>`;
 
                 popup.innerHTML = popupContent;
 
-                var firstBaseLayerName = Object.keys(baseLayers)[0];
-                if (firstBaseLayerName) {
-                    baseLayers[firstBaseLayerName].addTo(map);
-                    var selectedBase = popup.querySelector(`.base-layer[data-layer="${firstBaseLayerName}"]`);
-                    if (selectedBase) selectedBase.classList.add('selected');
+                var baseNames = Object.keys(baseLayers);
+                var initialBase = (defaultBase && baseLayers[defaultBase]) ? defaultBase : baseNames[0];
+                if (initialBase) {
+                Object.values(baseLayers).forEach(layer => { if (map.hasLayer(layer)) map.removeLayer(layer); });
+                baseLayers[initialBase].addTo(map);
+                var selectedBase = popup.querySelector(`.base-layer[data-layer="${initialBase}"]`);
+                if (selectedBase) selectedBase.classList.add('selected');
                 }
 
+                const wantThemes = Array.isArray(_defaultThemes) ? _defaultThemes : [];
+                wantThemes.forEach(name => {
+                const lyr = themeLayers[name];
+                if (!lyr) return;
+
+                if (lyr instanceof L.TileLayer) {
+                    if (!map.hasLayer(lyr)) lyr.addTo(map);
+                    lyr.bringToFront();
+                } else {
+                    if (!activeClusterThemes.has(name)) {
+                    if (typeof lyr.getLayers === 'function') {
+                        if (mainClusterGroup) mainClusterGroup.addLayers(lyr.getLayers());
+                        else map.addLayer(lyr);
+                    } else {
+                        if (mainClusterGroup) mainClusterGroup.addLayer(lyr);
+                        else map.addLayer(lyr);
+                    }
+                    activeClusterThemes.add(name);
+                    }
+                }
+                const item = popup.querySelector(`.theme-layer[data-layer="${name}"]`);
+                if (item) item.classList.add('selected');
+                });
+
                 L.DomEvent.on(button, 'click', function (e) {
-                    L.DomEvent.stop(e);
-                    popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
+                L.DomEvent.stop(e);
+                popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
                 });
 
                 popup.querySelectorAll('.base-layer').forEach(function (option) {
-                    L.DomEvent.on(option, 'click', function (e) {
+                L.DomEvent.on(option, 'click', function (e) {
                     L.DomEvent.stop(e);
                     const layerName = this.getAttribute('data-layer');
                     Object.values(baseLayers).forEach(function (layer) {
-                        if (map.hasLayer(layer)) map.removeLayer(layer);
+                    if (map.hasLayer(layer)) map.removeLayer(layer);
                     });
                     baseLayers[layerName].addTo(map);
                     popup.querySelectorAll('.base-layer').forEach(el => el.classList.remove('selected'));
                     this.classList.add('selected');
-                    });
+                });
                 });
 
                 popup.querySelectorAll('.theme-layer').forEach(function (option) {
-                    L.DomEvent.on(option, 'click', function (e) {
+                L.DomEvent.on(option, 'click', function (e) {
                     L.DomEvent.stop(e);
                     const layerName = this.getAttribute('data-layer');
                     const layer = themeLayers[layerName];
+
                     if (layer instanceof L.TileLayer) {
-                        if (map.hasLayer(layer)) {
+                    if (map.hasLayer(layer)) {
                         map.removeLayer(layer);
                         this.classList.remove('selected');
-                        } else {
+                    } else {
                         layer.addTo(map);
                         layer.bringToFront();
                         this.classList.add('selected');
-                        }
+                    }
                     } else {
-                        if (activeClusterThemes.has(layerName)) {
+                    if (activeClusterThemes.has(layerName)) {
                         if (typeof layer.getLayers === 'function') {
-                            mainClusterGroup.removeLayers(layer.getLayers());
+                        mainClusterGroup ? mainClusterGroup.removeLayers(layer.getLayers()) : map.removeLayer(layer);
                         } else {
-                            mainClusterGroup.removeLayer(layer);
+                        mainClusterGroup ? mainClusterGroup.removeLayer(layer) : map.removeLayer(layer);
                         }
                         activeClusterThemes.delete(layerName);
                         this.classList.remove('selected');
-                        } else {
+                    } else {
                         if (typeof layer.getLayers === 'function') {
-                            mainClusterGroup.addLayers(layer.getLayers());
+                        mainClusterGroup ? mainClusterGroup.addLayers(layer.getLayers()) : map.addLayer(layer);
                         } else {
-                            mainClusterGroup.addLayer(layer);
+                        mainClusterGroup ? mainClusterGroup.addLayer(layer) : map.addLayer(layer);
                         }
                         activeClusterThemes.add(layerName);
                         this.classList.add('selected');
-                        }
                     }
-                    });
+                    }
+                });
                 });
 
                 return container;
-                }
+            }
             });
             const layerButton = new LayerButton({ position: 'topright' });
             layerButton.addTo(map);
         }
+
         if (showZoomControl) {
             L.control.zoom({ position: 'topright' }).addTo(map);
         }
