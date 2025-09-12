@@ -3,140 +3,173 @@
     /* 創建圖層按鈕 */
     function createLayerButton(map, baseLayers, themeLayers, thumbnails, options = {}) {
         const {
-            showLayerButton = true,
-            showZoomControl = true
+        showLayerButton = true,
+        showZoomControl = true,
+        clusterGroup: mainClusterGroup,
+        defaultBase = null,
+        defaultThemes = []
         } = options;
 
-        const mainClusterGroup = options.clusterGroup;
+        const activeClusterThemes = new Set();
 
-         if (showLayerButton) {
-            const LayerButton = L.Control.extend({
-                onAdd: function (map) {
-                var container = L.DomUtil.create('div', 'layer-button-container');
-                L.DomEvent.disableClickPropagation(container);
-                L.DomEvent.disableScrollPropagation(container);
+        const firstBaseLayerName = defaultBase && baseLayers[defaultBase]
+        ? defaultBase
+        : Object.keys(baseLayers)[0];
 
-                var button = L.DomUtil.create('button', 'layer-button', container);
-                button.innerHTML = '<svg xmlns="https://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24"><path fill="#fff" d="m13.387 3.425l6.365 4.243a1 1 0 0 1 0 1.664l-6.365 4.244a2.5 2.5 0 0 1-2.774 0L4.248 9.332a1 1 0 0 1 0-1.664l6.365-4.243a2.5 2.5 0 0 1 2.774 0m6.639 8.767a2 2 0 0 1-.577.598l-6.05 4.084a2.5 2.5 0 0 1-2.798 0l-6.05-4.084a2 2 0 0 1-.779-2.29l6.841 4.56a2.5 2.5 0 0 0 2.613.098l.16-.098l6.841-4.56a2 2 0 0 1-.201 1.692m0 3.25a2 2 0 0 1-.577.598l-6.05 4.084a2.5 2.5 0 0 1-2.798 0l-6.05-4.084a2 2 0 0 1-.779-2.29l6.841 4.56a2.5 2.5 0 0 0 2.613.098l.16-.098l6.841-4.56a2 2 0 0 1-.201 1.692"/></svg>&nbsp;圖層';
+        if (firstBaseLayerName) {
+        baseLayers[firstBaseLayerName].addTo(map);
+        }
 
-                var popup = L.DomUtil.create('div', 'layer-popup', container);
-                popup.style.display = 'none';
+        defaultThemes.forEach((name) => {
+        const layer = themeLayers[name];
+        if (!layer) return;
+        if (layer instanceof L.TileLayer) {
+            layer.addTo(map).bringToFront();
+        } else {
+            if (mainClusterGroup) {
+            if (typeof layer.getLayers === 'function') {
+                mainClusterGroup.addLayers(layer.getLayers());
+            } else {
+                mainClusterGroup.addLayer(layer);
+            }
+            activeClusterThemes.add(name);
+            } else {
+            if (typeof layer.addTo === 'function') layer.addTo(map);
+            }
+        }
+        });
 
-                var popupContent = `
-                    <div class="popup-content">
-                    <div class="popup-title">底圖</div>
-                    <div class="layer-options-container">`;
-                Object.keys(baseLayers).forEach(function (layerName) {
-                    var content = thumbnails[layerName];
-                    let thumbHtml = '';
-                    if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
-                    thumbHtml = `<img src="${content}" alt="${layerName}" class="thumbnail-img">`;
+        if (showLayerButton) {
+        const LayerButton = L.Control.extend({
+            onAdd: function (map) {
+            const container = L.DomUtil.create('div', 'layer-button-container');
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+
+            const button = L.DomUtil.create('button', 'layer-button', container);
+            button.innerHTML =
+                '<svg xmlns="https://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24"><path fill="#fff" d="m13.387 3.425l6.365 4.243a1 1 0 0 1 0 1.664l-6.365 4.244a2.5 2.5 0 0 1-2.774 0L4.248 9.332a1 1 0 0 1 0-1.664l6.365-4.243a2.5 2.5 0 0 1 2.774 0m6.639 8.767a2 2 0 0 1-.577.598l-6.05 4.084a2.5 2.5 0 0 1-2.798 0l-6.05-4.084a2 2 0 0 1-.779-2.29l6.841 4.56a2.5 2.5 0 0 0 2.613.098l.16-.098l6.841-4.56a2 2 0 0 1-.201 1.692m0 3.25a2 2 0 0 1-.577.598l-6.05 4.084a2.5 2.5 0 0 1-2.798 0l-6.05-4.084a2 2 0 0 1-.779-2.29l6.841 4.56a2.5 2.5 0 0 0 2.613.098l.16-.098l6.841-4.56a2 2 0 0 1-.201 1.692"/></svg>&nbsp;圖層';
+
+            const popup = L.DomUtil.create('div', 'layer-popup', container);
+            popup.style.display = 'none';
+
+            let html = `
+                <div class="popup-content">
+                <div class="popup-title">底圖</div>
+                <div class="layer-options-container">`;
+            Object.keys(baseLayers).forEach((layerName) => {
+                const content = thumbnails[layerName];
+                const thumbHtml = (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image')))
+                ? `<img src="${content}" alt="${layerName}" class="thumbnail-img">`
+                : `<div class="thumbnail-svg">${content}</div>`;
+                html += `
+                <div class="layer-option base-layer" data-layer="${layerName}">
+                    <div class="thumbnail-container">${thumbHtml}</div>
+                    <span>${layerName}</span>
+                </div>`;
+            });
+            html += `</div></div>`;
+
+            html += `
+                <div class="popup-content">
+                <div class="popup-title">主題圖</div>
+                <div class="layer-options-container">`;
+            Object.keys(themeLayers).forEach((layerName) => {
+                const content = thumbnails[layerName];
+                const thumbHtml = (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image')))
+                ? `<img src="${content}" alt="${layerName}" class="thumbnail-img">`
+                : `<div class="thumbnail-svg">${content}</div>`;
+                html += `
+                <div class="layer-option theme-layer" data-layer="${layerName}">
+                    <div class="thumbnail-container">${thumbHtml}</div>
+                    <span>${layerName}</span>
+                </div>`;
+            });
+            html += `</div></div>`;
+
+            popup.innerHTML = html;
+
+            const selectedBase = popup.querySelector(`.base-layer[data-layer="${firstBaseLayerName}"]`);
+            if (selectedBase) selectedBase.classList.add('selected');
+            defaultThemes.forEach((name) => {
+                const el = popup.querySelector(`.theme-layer[data-layer="${name}"]`);
+                if (el) el.classList.add('selected');
+            });
+
+            L.DomEvent.on(button, 'click', (e) => {
+                L.DomEvent.stop(e);
+                popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
+            });
+
+            popup.querySelectorAll('.base-layer').forEach((option) => {
+                L.DomEvent.on(option, 'click', function (e) {
+                L.DomEvent.stop(e);
+                const layerName = this.getAttribute('data-layer');
+                Object.values(baseLayers).forEach((layer) => {
+                    if (map.hasLayer(layer)) map.removeLayer(layer);
+                });
+                baseLayers[layerName].addTo(map);
+                popup.querySelectorAll('.base-layer').forEach(el => el.classList.remove('selected'));
+                this.classList.add('selected');
+                });
+            });
+
+            popup.querySelectorAll('.theme-layer').forEach((option) => {
+                L.DomEvent.on(option, 'click', function (e) {
+                L.DomEvent.stop(e);
+                const layerName = this.getAttribute('data-layer');
+                const layer = themeLayers[layerName];
+                if (!layer) return;
+
+                if (layer instanceof L.TileLayer) {
+                    if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                    this.classList.remove('selected');
                     } else {
-                    thumbHtml = `<div class="thumbnail-svg">${content}</div>`;
-                    }
-                    popupContent += `
-                    <div class="layer-option base-layer" data-layer="${layerName}">
-                        <div class="thumbnail-container">${thumbHtml}</div>
-                        <span>${layerName}</span>
-                    </div>`;
-                });
-                popupContent += `
-                    </div>
-                    </div>`;
-
-                popupContent += `
-                    <div class="popup-content">
-                    <div class="popup-title">主題圖</div>
-                    <div class="layer-options-container">`;
-                Object.keys(themeLayers).forEach(function (layerName) {
-                    var content = thumbnails[layerName];
-                    let thumbHtml = '';
-                    if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image'))) {
-                    thumbHtml = `<img src="${content}" alt="${layerName}" class="thumbnail-img">`;
-                    } else {
-                    thumbHtml = `<div class="thumbnail-svg">${content}</div>`;
-                    }
-                    popupContent += `
-                    <div class="layer-option theme-layer" data-layer="${layerName}">
-                        <div class="thumbnail-container">${thumbHtml}</div>
-                        <span>${layerName}</span>
-                    </div>`;
-                });
-                popupContent += `
-                    </div>
-                    </div>`;
-
-                popup.innerHTML = popupContent;
-
-                var firstBaseLayerName = Object.keys(baseLayers)[0];
-                if (firstBaseLayerName) {
-                    baseLayers[firstBaseLayerName].addTo(map);
-                    var selectedBase = popup.querySelector(`.base-layer[data-layer="${firstBaseLayerName}"]`);
-                    if (selectedBase) selectedBase.classList.add('selected');
-                }
-
-                L.DomEvent.on(button, 'click', function (e) {
-                    L.DomEvent.stop(e);
-                    popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
-                });
-
-                popup.querySelectorAll('.base-layer').forEach(function (option) {
-                    L.DomEvent.on(option, 'click', function (e) {
-                    L.DomEvent.stop(e);
-                    const layerName = this.getAttribute('data-layer');
-                    Object.values(baseLayers).forEach(function (layer) {
-                        if (map.hasLayer(layer)) map.removeLayer(layer);
-                    });
-                    baseLayers[layerName].addTo(map);
-                    popup.querySelectorAll('.base-layer').forEach(el => el.classList.remove('selected'));
+                    layer.addTo(map).bringToFront();
                     this.classList.add('selected');
-                    });
-                });
-
-                popup.querySelectorAll('.theme-layer').forEach(function (option) {
-                    L.DomEvent.on(option, 'click', function (e) {
-                    L.DomEvent.stop(e);
-                    const layerName = this.getAttribute('data-layer');
-                    const layer = themeLayers[layerName];
-                    if (layer instanceof L.TileLayer) {
-                        if (map.hasLayer(layer)) {
-                        map.removeLayer(layer);
-                        this.classList.remove('selected');
-                        } else {
-                        layer.addTo(map);
-                        layer.bringToFront();
-                        this.classList.add('selected');
-                        }
-                    } else {
-                        if (activeClusterThemes.has(layerName)) {
+                    }
+                } else {
+                    if (mainClusterGroup) {
+                    if (activeClusterThemes.has(layerName)) {
                         if (typeof layer.getLayers === 'function') {
-                            mainClusterGroup.removeLayers(layer.getLayers());
+                        mainClusterGroup.removeLayers(layer.getLayers());
                         } else {
-                            mainClusterGroup.removeLayer(layer);
+                        mainClusterGroup.removeLayer(layer);
                         }
                         activeClusterThemes.delete(layerName);
                         this.classList.remove('selected');
-                        } else {
+                    } else {
                         if (typeof layer.getLayers === 'function') {
-                            mainClusterGroup.addLayers(layer.getLayers());
+                        mainClusterGroup.addLayers(layer.getLayers());
                         } else {
-                            mainClusterGroup.addLayer(layer);
+                        mainClusterGroup.addLayer(layer);
                         }
                         activeClusterThemes.add(layerName);
                         this.classList.add('selected');
-                        }
                     }
-                    });
-                });
-
-                return container;
+                    } else {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                        this.classList.remove('selected');
+                    } else {
+                        if (typeof layer.addTo === 'function') layer.addTo(map);
+                        this.classList.add('selected');
+                    }
+                    }
                 }
+                });
             });
-            const layerButton = new LayerButton({ position: 'topright' });
-            layerButton.addTo(map);
+
+            return container;
+            }
+        });
+
+        new LayerButton({ position: 'topright' }).addTo(map);
         }
+
         if (showZoomControl) {
-            L.control.zoom({ position: 'topright' }).addTo(map);
+        L.control.zoom({ position: 'topright' }).addTo(map);
         }
     }
 
