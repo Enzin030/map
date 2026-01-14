@@ -21,7 +21,7 @@
         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1) !important;
     }
     .layer-button {
-        background-color: var(--accent, #0f766e);
+        background-color: var(--accent, #1E8AC9);
         border: none;
         border-radius: 5px;
         padding: 5px 5px;
@@ -95,11 +95,11 @@
         font-size: 12px;
     }
     .layer-option.selected .thumbnail-container {
-        border: 3px solid var(--accent, #0f766e);
+        border: 3px solid var(--accent, #1E8AC9);
         border-radius: 4px;
     }
     .layer-option.selected span {
-        color: var(--accent, #0f766e);
+        color: var(--accent, #1E8AC9);
     }
     .layer-option .thumbnail-container svg {
         width: 30px;
