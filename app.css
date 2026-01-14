@@ -1,0 +1,107 @@
+﻿:root {
+  --panel-border: #e2e8f0;
+  --panel-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --muted: #6b7280;
+  --ink: #0f172a;
+}
+
+.app-body {
+  font-family: "Noto Sans TC", "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+
+.panel-stack {
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--panel-shadow);
+}
+
+.tab-btn {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em;
+  color: var(--muted) !important;
+}
+
+.tab-btn[data-active="true"] {
+  color: var(--ink) !important;
+  border-color: var(--accent) !important;
+}
+
+.panel-stack input,
+.panel-stack select {
+  border-radius: 10px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #f8fafc !important;
+  padding: 10px 12px !important;
+}
+
+.panel-stack input:focus,
+.panel-stack select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.panel-stack button {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 18px -12px rgba(37, 99, 235, 0.5);
+}
+
+.preset-block {
+  border-top: 1px solid #eef2f7;
+  padding-top: 14px;
+}
+
+.preset-title {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.preset-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preset-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.preset-option.is-active {
+  border-color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.preset-option input {
+  accent-color: var(--accent);
+}
+
+.map-canvas {
+  align-self: center;
+}
+
+@media (max-width: 768px) {
+  .panel-stack {
+    padding: 14px;
+  }
+
+  .preset-list {
+    grid-template-columns: 1fr;
+  }
+}
