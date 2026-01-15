@@ -82,12 +82,12 @@
     .thumbnail-container img{
         border-radius: 4px;
     }
-    .thumbnail-container svg {
+    .thumbnail-svg {
         width: 60%;
         height: 60%;
-        object-fit: contain;
     }
-    .thumbnail-container img {
+    .thumbnail-container img,
+    .thumbnail-container svg {
         width: 100%;
         height: 100%;
         object-fit: contain;
