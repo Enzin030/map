@@ -76,7 +76,7 @@
                 <div class="layer-options-container">`;
             Object.keys(themeLayers).forEach((layerName) => {
                 const content = thumbnails[layerName];
-                const thumbHtml = (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:image')))
+                const thumbHtml = (typeof content === 'string' &&  content.startsWith('data:image'))
                 ? `<img src="${content}" alt="${layerName}" class="thumbnail-img">`
                 : `<div class="thumbnail-svg">${content}</div>`;
                 html += `
