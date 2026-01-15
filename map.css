@@ -82,8 +82,12 @@
     .thumbnail-container img{
         border-radius: 4px;
     }
-    .thumbnail-container img,
     .thumbnail-container svg {
+        width: 60%;
+        height: 60%;
+        object-fit: contain;
+    }
+    .thumbnail-container img {
         width: 100%;
         height: 100%;
         object-fit: contain;
